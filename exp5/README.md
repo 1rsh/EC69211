@@ -4,7 +4,9 @@
 ### How to Run:
 To try run `exp5.ipynb` directly.
 
-The code contains the `ImageStack` class along with an UI which can be used for spatial domain filtering (convolutions).
+The code contains the `ImageStack` class in the `imagestack.py` and the `UI` class in `ui.py` to be used for spatial domain filtering (convolutions). 
+
+Any `ImageStack` object takes in a folder path and starts computing cache asynchronously using n-1 CPU cores (all possible convolution requests). It takes about 35-40s for the cache to prepare for 11 images on 14 CPU cores. Also, the class is usable in the meantime (convolutions are computed in the callback during this time). This has been done so that user can still see outputs without waiting for the whole cache to form.
 
 ### Effects of different filters:
 * Mean:
@@ -37,4 +39,4 @@ The code contains the `ImageStack` class along with an UI which can be used for 
 
 ### Gaussian Unblur:
 <br>
-<img src="gaussian_unblur.png"></img>
+<img src="assets/gaussian_unblur.png"></img>

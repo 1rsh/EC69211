@@ -1,4 +1,6 @@
-*/.DS_Store
+*.DS_Store
 */.venv
-*/__pycache__
-*/.ipynb_checkpoints
+*__pycache__
+*.ipynb_checkpoints
+exp5/saved_noisy_images/*
+exp5/saved_normal_images/*
