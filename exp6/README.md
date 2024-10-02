@@ -24,6 +24,6 @@ Precomputed outputs are saved to `output/`.
 ### Code Structure:
 - `exp6.py`: Main script to plot histogram equalization or matching.
 - `histogram_utils.py`: Contains the Histogram class with all key functions:
-- `histogram_equalization()`: Performs histogram equalization.
+- `histogram_equalization()`: Performs histogram equalization on values of HSV image.
 - `histogram_matching()`: Performs histogram matching with a custom transformation.
 - `calculate_histogram()`, `calculate_cdf()`: Utility functions to calculate the histogram and CDF.
