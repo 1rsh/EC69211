@@ -16,6 +16,7 @@ class ImageCompressor:
     def __init__(self, quality_factor=50, subsampling='4:2:0', verbose=False):
         self.quality_factor = quality_factor
         self.subsampling = subsampling
+        self.subsampling_codes = {'4:2:0': 0, '4:2:2': 1, '4:4:4': 2}
 
         self.compressed_data = None
         self.decompressed_image = None
@@ -26,15 +27,18 @@ class ImageCompressor:
         self.q = Quantizer(self.quality_factor)
         self.zz = ZigZag()
         self.ee = EntropyEncoder()
+    
+    def update_class_params(self):
+        self.ss = Subsampler(self.subsampling)
+        self.q = Quantizer(self.quality_factor)
 
     def compress(self, image):
-        """Orchestrate the compression pipeline."""
         # Step 1: Convert RGB to YCbCr
         self.original_image = image
         self.shape = self.original_image.shape
         ycbcr_image = self.cc.rgb2ycbcr(self.original_image)
 
-        # Step 2: Apply chroma subsampling (optional)
+        # Step 2: Apply chroma subsampling
         subsampled_image = self.ss.subsample(ycbcr_image)
         
         # Step 3: Split into blocks
@@ -46,7 +50,7 @@ class ImageCompressor:
         # Step 5: Quantization
         quantized_blocks = self.q.quantize(dct_blocks)
 
-        # Step 6: Zigzag scan and RLE (optional)
+        # Step 6: Zigzag scan and RLE
         compressed_data = []
         for i in range(3):
             zigzagged_blocks = np.stack([self.zz.zigzag_2d(qb) for qb in quantized_blocks[i]]).astype(int)
@@ -56,12 +60,10 @@ class ImageCompressor:
         return compressed_data
 
     def decompress(self, data):
-        """Orchestrate the decompression pipeline."""
         compressed_data = []
         for channel in range(3):
             compressed_data.append(dehuff(*data[channel]))
             
-        # compressed_data = self.byte_string_to_lists(raw_bytes)
         # Step 1: Run-length decode
         quantized_blocks = np.empty(3, dtype=object)
         for i in range(3):
@@ -83,10 +85,19 @@ class ImageCompressor:
         self.decompressed_image = self.cc.ycbcr2rgb(upsampled_image)
     
     def save(self, filename, compressed_data):
-        save_to_file(compressed_data, filename)
+        subsampling = self.subsampling_codes[self.subsampling]
+        save_to_file(compressed_data, filename, (*self.shape, self.quality_factor, subsampling))
     
     def load(self, filename):
-        return load_from_file(filename)
+        loaded, params = load_from_file(filename)
+        self.shape = params[:3]
+        self.quality_factor = params[3]
+
+        inverse_subsampling_codes = {v: k for k, v in self.subsampling_codes.items()}
+        self.subsampling = inverse_subsampling_codes[params[4]]
+
+        self.update_class_params()
+        return loaded
 
 if __name__ == "__main__":
     bmp = BMP()

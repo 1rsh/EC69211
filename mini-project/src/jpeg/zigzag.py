@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
 from ..bmp import BMP
 
 class ZigZag:
@@ -12,7 +11,6 @@ class ZigZag:
         return np.arange(n * n).reshape((n, n))
 
     def _generate_zigzag_index(self, n):
-        """Generates the zigzag order indices for an n x n block."""
         index = np.empty((n, n), dtype=int)
         i = 0
         for s in range(2 * n - 1):
@@ -27,11 +25,9 @@ class ZigZag:
         return index.T
 
     def zigzag_2d(self, block):
-        """Applies zigzag scan on a 2D block and returns the result as a 1D array."""
         if block.shape != (self.block_size, self.block_size):
             raise ValueError(f"Block size must be {self.block_size}x{self.block_size}")
 
-        # Use the zigzag index to extract the values in zigzag order
         zigzag_ordered_array = np.empty(self.block_size * self.block_size, dtype=block.dtype)
         
         for i in range(self.block_size):
@@ -41,12 +37,10 @@ class ZigZag:
         return zigzag_ordered_array
 
     def zigzag_3d(self, blocks):
-        """Applies zigzag scan on each 2D block in a 3D array."""
         height, width, depth = blocks.shape
         if height != self.block_size or width != self.block_size:
             raise ValueError(f"Each block must be {self.block_size}x{self.block_size}")
 
-        # Apply zigzag to each 2D slice (depth is number of 2D slices)
         result = np.zeros((depth, self.block_size * self.block_size), dtype=blocks.dtype)
         for i in range(depth):
             result[i] = self.zigzag_2d(blocks[..., i])
@@ -59,12 +53,10 @@ class ZigZag:
         return zigzag_array[self.zigzag_index.flatten()].reshape(self.block_size, self.block_size)
 
     def inverse_zigzag_3d(self, zigzag_blocks):
-        """Applies inverse zigzag scan on each 1D array in the 3D array."""
         depth, zigzag_size = zigzag_blocks.shape
         if zigzag_size != self.block_size * self.block_size:
             raise ValueError(f"Zigzag size must be {self.block_size * self.block_size}")
 
-        # Apply inverse zigzag to each 1D zigzagged block
         result = np.zeros((self.block_size, self.block_size, depth), dtype=zigzag_blocks.dtype)
         for i in range(depth):
             result[..., i] = self.inverse_zigzag_2d(zigzag_blocks[i])

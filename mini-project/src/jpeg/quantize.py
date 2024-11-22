@@ -8,7 +8,6 @@ from ..bmp.image import BMP
 
 class Quantizer:
     def __init__(self, quality: int = 50):
-        # Default JPEG quantization tables (standardized)
         self.luminance_table = np.array([
             [16, 11, 10, 16, 24, 40, 51, 61],
             [12, 12, 14, 19, 26, 58, 60, 55],
@@ -31,7 +30,6 @@ class Quantizer:
             [99, 99, 99, 99, 99, 99, 99, 99]
         ])
 
-        # Adjust quantization tables based on quality factor
         self.luminance_table = self.adjust_quality(self.luminance_table, quality)
         self.chrominance_table = self.adjust_quality(self.chrominance_table, quality)
 
@@ -42,16 +40,11 @@ class Quantizer:
             return self.chrominance_table
 
     def adjust_quality(self, table: np.ndarray, quality: int) -> np.ndarray:
-        """
-        Adjust the quantization table based on the quality factor.
-        Higher quality -> lower compression.
-        """
         if quality < 1:
             quality = 1
         elif quality > 100:
             quality = 100
 
-        # Scale quality factor
         if quality < 50:
             scale = 5000 / quality
         else:
@@ -63,54 +56,22 @@ class Quantizer:
         return adjusted_table
 
     def quantize(self, block: np.ndarray) -> np.ndarray:
-        """
-        Quantize the given 8x8 block using the appropriate quantization table.
-        Component can be 'luminance' or 'chrominance'.
-        """
         for channel in range(3):
             if channel == 0:
                 block[channel] = np.round(block[channel] / self.luminance_table).astype(np.int32)
             else:
                 block[channel] = np.round(block[channel] / self.chrominance_table).astype(np.int32)
         return block
-        # if block.ndim == 3:
-        #     y, cb, cr = (block[..., i] for i in range(3))
-        #     return np.stack([
-        #         np.round(y / self.luminance_table).astype(np.int32),
-        #         np.round(cb / self.chrominance_table).astype(np.int32),
-        #         np.round(cr / self.chrominance_table).astype(np.int32)
-        #     ], axis=-1)
-        # else:
-        #     return np.stack([self.quantize(b) for b in block], axis=0)
-        # else:
-        #     raise ValueError("Input should have 3 or 4 dims")
 
     def dequantize(self, block: np.ndarray, component: str = 'luminance') -> np.ndarray:
-        """
-        Dequantize the given 8x8 block using the appropriate quantization table.
-        Component can be 'luminance' or 'chrominance'.
-        """
         for channel in range(3):
             if channel == 0:
                 block[channel] = (block[channel] * self.luminance_table).astype(np.int32)
             else:
                 block[channel] = (block[channel] * self.chrominance_table).astype(np.int32)
         return block
-        # if block.ndim == 3:
-        #     y, cb, cr = (block[..., i] for i in range(3))
-        #     return np.stack([
-        #         np.round(y * self.luminance_table).astype(np.int32),
-        #         np.round(cb * self.chrominance_table).astype(np.int32),
-        #         np.round(cr * self.chrominance_table).astype(np.int32)
-        #     ], axis=-1)
-        # elif block.ndim == 4:
-        #     return np.stack([self.dequantize(b) for b in block], axis=0)
-        # else:
-        #     raise ValueError("Input should have 3 or 4 dims")
-
 
 if __name__ == "__main__":
-    # Assuming BMP class handles reading and writing BMP files correctly
     bmp = BMP()
     bmp.read('data/input.bmp')
 

@@ -12,21 +12,9 @@ from ..bmp import BMP
 
 class EntropyEncoder:
     def __init__(self):
-        # Store only what's required for encoding/decoding.
         self.encoded_data = []
     
     def run_length_encode(self, flat_block):
-        """
-        Perform run-length encoding on a given block.
-        Only keep non-zero values and their counts,
-        including a (0, 0) entry for trailing zeros.
-        
-        Args:
-            block (numpy.ndarray): Input block of DCT coefficients.
-
-        Returns:
-            list: Encoded data in RLE format.
-        """
         # Flatten the block for easier processing
         self.encoded_data = []
         
@@ -61,78 +49,40 @@ class EntropyEncoder:
 
         return encoded
     
-    # def decompress_blocks(self, encoded):
-
-    #     shehc = []
-    #     prev_i = -1
-    #     for i in range(1, len(encoded), 2):
-    #         if encoded[i] == 0:
-    #             shehc.append(encoded[prev_i+1:i+1])
-    #             prev_i = i
-        
-    #     decompressed_blocks = np.array([self.run_length_decode(he) for he in shehc])
-    #     return decompressed_blocks
-
     def decompress_blocks(self, encoded):
-        """
-        Decompress the encoded blocks.
-        
-        Args:
-            encoded (list): List containing the DC and AC components in compressed form.
-
-        Returns:
-            numpy.ndarray: Decoded blocks.
-        """
         decompressed_blocks = []
         prev_dc = 0
         index = 0
 
         while index < len(encoded):
-            # Get the differential DC value and restore the actual DC value
             dc_diff = encoded[index]  # DC differential value
             dc_value = dc_diff + prev_dc  # Restore the actual DC value
             prev_dc = dc_value  # Update prev_dc for the next block
 
-            # Move to the next entry in the encoded list (which contains AC data)
             index += 1
-            # Decode the AC components using run-length decoding
-            ac_encoded = encoded[index]  # AC encoded data
 
-            ac_decoded = self.run_length_decode(ac_encoded)  # Decoded AC coefficients
+            ac_encoded = encoded[index]
+            ac_decoded = self.run_length_decode(ac_encoded)
 
-            # Reconstruct the full block (DC + AC)
-            full_block = np.zeros(64, dtype=int)  # Assuming 8x8 block
-            full_block[0] = dc_value  # Set the DC value
-            full_block[1:] = ac_decoded  # Set the AC coefficients
+            full_block = np.zeros(64, dtype=int) 
+            full_block[0] = dc_value  
+            full_block[1:] = ac_decoded
 
-            # Add the reconstructed block to the list
             decompressed_blocks.append(full_block)
 
-            # Move to the next block (DC value is already handled, so move to the next AC data)
             index += 1
 
-        # Return the decompressed blocks as a numpy array
         return np.array(decompressed_blocks)
     
     def run_length_decode(self, encoded_data):
-        """
-        Perform run-length decoding from the RLE encoded data.
-        
-        Args:
-            encoded_data (list): RLE encoded data.
-
-        Returns:
-            numpy.ndarray: Decoded block of DCT coefficients.
-        """
-        # Initialize a flat array of zeros for decoding
-        flat_block = np.zeros(63, dtype=int)  # Assuming 8x8 block
+        flat_block = np.zeros(63, dtype=int)
         index = 0
         
         for i in range(0, len(encoded_data), 2):
             value = encoded_data[i]
             count = encoded_data[i+1]
             if value == 0:
-                index += count  # Skip zeros
+                index += count 
             else:
                 for _ in range(count):
                     flat_block[index] = value
@@ -140,8 +90,6 @@ class EntropyEncoder:
                     
         return flat_block
     
-
-# func
 def format_compressed(compressed):
     _compressed = []
     for c in compressed:
@@ -152,7 +100,6 @@ def format_compressed(compressed):
     return _compressed
 
 if __name__ == "__main__":
-    # Assuming BMP class handles reading and writing BMP files correctly
     bmp = BMP()
     bmp.read('data/input.bmp')
 

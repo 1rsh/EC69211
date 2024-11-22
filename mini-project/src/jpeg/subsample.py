@@ -32,9 +32,6 @@ class Subsampler:
         return sub_image
 
     def subsample(self, image):
-        """
-        Subsample Cb and Cr according to the method.
-        """
         Y, Cb, Cr = self._split_dims(image)
 
         if self.method == '4:4:4':
@@ -57,9 +54,6 @@ class Subsampler:
 
 
     def upsample(self, image):
-        """
-        Upsample Cb and Cr to match Y's resolution.
-        """
         Y, Cb, Cr = self._split_dims(image, upsample=True)
 
         if self.method == '4:4:4':

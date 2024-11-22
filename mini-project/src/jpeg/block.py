@@ -46,16 +46,12 @@ class FastCosineTransform:
         return result
 
     def dct_2d(self, a):
-        # Apply 1D DCT on rows
         a_dct = np.apply_along_axis(self.dct1d, axis=0, arr=a)
-        # Apply 1D DCT on columns
         a_dct = np.apply_along_axis(self.dct1d, axis=1, arr=a_dct)
         return a_dct
 
     def idct_2d(self, a):
-        # Apply 1D IDCT on rows
         a_idct = np.apply_along_axis(self.idct1d, axis=0, arr=a)
-        # Apply 1D IDCT on columns
         a_idct = np.apply_along_axis(self.idct1d, axis=1, arr=a_idct)
         return a_idct
 
@@ -79,15 +75,6 @@ class BlockProcessor:
         
 
     def split_into_blocks(self, image, subsampling='4:2:2'):
-        """
-        Split the image into non-overlapping blocks of size block_size x block_size.
-
-        Args:
-            image (numpy.ndarray): Input image as a 2D or 3D numpy array.
-
-        Returns:
-            List[numpy.ndarray]: List of image blocks.
-        """
         image = self._pad_image(image)
 
         blocks = []
@@ -110,15 +97,6 @@ class BlockProcessor:
         return npblocks
 
     def _split_channel_into_blocks(self, channel, block_size):
-        """
-        Helper method to split a single channel image into blocks.
-
-        Args:
-            channel (numpy.ndarray): Single channel of the image.
-
-        Returns:
-            List[numpy.ndarray]: List of blocks for the channel.
-        """
         height, width = channel.shape
 
         blocks = []
@@ -131,18 +109,6 @@ class BlockProcessor:
         return blocks
     
     def merge_blocks(self, blocks, image_shape, subsampling="4:2:0"):
-        """
-        Merge blocks back into the original image shape.
-
-        Args:
-            blocks (numpy.ndarray): List of blocks as a numpy array.
-            image_shape (tuple): Shape of the original image (height, width) for grayscale
-                                or (height, width, channels) for color images.
-
-        Returns:
-            numpy.ndarray: Reconstructed image from blocks.
-        """
-        
         image = np.empty(3, dtype=object)
         for channel in range(3):
             block = blocks[channel]
@@ -151,12 +117,9 @@ class BlockProcessor:
             block_size = [self.block_size, self.block_size]
             if subsampling == "4:2:2" and channel > 0:
                 width //= 2
-                # block_size[1]//=2
             elif subsampling == "4:2:0" and channel > 0:
                 height //= 2
                 width //= 2
-                # block_size[1]//=2
-                # block_size[0]//=2
             
             h = int(np.ceil(height/self.block_size)*self.block_size)
             w = int(np.ceil(width/self.block_size)*self.block_size)
@@ -174,16 +137,6 @@ class BlockProcessor:
 
 
     def apply_dct(self, blocks):
-        """
-        Apply Discrete Cosine Transform (DCT) to each block.
-
-        Args:
-            blocks (List[numpy.ndarray]): List of image blocks.
-
-        Returns:
-            List[numpy.ndarray]: List of DCT-transformed blocks.
-        """
-
         def process_block(block):
             return self.dct.dct_2d(block)
         
@@ -198,25 +151,6 @@ class BlockProcessor:
         return npdct
 
     def apply_idct(self, dct_blocks):
-        """
-        Apply Inverse Discrete Cosine Transform (IDCT) to each DCT block.
-
-        Args:
-            dct_blocks (List[numpy.ndarray]): List of DCT blocks.
-
-        Returns:
-            List[numpy.ndarray]: List of IDCT-transformed blocks.
-        """
-        # def process_block(block):
-        #     channels = [self.dct.idct_2d(block[..., channel]) for channel in range(dct_blocks.shape[-1])]
-        #     return channels
-        
-        # with mp.Pool(self.num_workers) as p:
-        #     idct_blocks = p.map(process_block, tqdm(dct_blocks))
-        #     idct_blocks = np.array(idct_blocks)
-        #     idct_blocks = np.transpose(np.array(idct_blocks), axes=[0, 2, 3, 1])
-        #     idct_blocks = np.clip(idct_blocks, a_min=0, a_max=255).astype(int)
-        # return idct_blocks
         def process_block(block):
             return self.dct.idct_2d(block)
         
@@ -239,7 +173,6 @@ class BlockProcessor:
     #     self.__dict__.update(state)
     
 if __name__ == "__main__":
-    # Assuming BMP class handles reading and writing BMP files correctly
     bmp = BMP()
     bmp.read('data/input.bmp')
 

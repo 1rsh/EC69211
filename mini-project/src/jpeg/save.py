@@ -1,142 +1,104 @@
 import struct
 import numpy as np
 
-def save_byte_strings(filename, byte_strings):
-    """
-    Save multiple byte strings to a file.
-    
-    Args:
-        filename (str): The name of the file.
-        byte_strings (bytes): Variable number of byte strings to save.
-    """
-    with open(filename, 'wb') as f:
-        for byte_string in byte_strings:
-            # First, store the length of the byte string, then the actual byte string
-            f.write(len(byte_string).to_bytes(4, 'big'))  # Write length (4 bytes)
-            f.write(byte_string)  # Write the actual byte string
-
-def retrieve_byte_strings(filename):
-    """
-    Retrieve byte strings from a file.
-    
-    Args:
-        filename (str): The name of the file.
-
-    Returns:
-        list: A list of retrieved byte strings.
-    """
-    byte_strings = []
-    with open(filename, 'rb') as f:
-        while True:
-            # Read the length of the next byte string (4 bytes)
-            length_bytes = f.read(4)
-            if not length_bytes:
-                break  # End of file
-            length = int.from_bytes(length_bytes, 'big')
-            
-            # Read the byte string of the specified length
-            byte_string = f.read(length)
-            byte_strings.append(byte_string)
-
-    return byte_strings
-
-def rle_data_to_bytes(rle_data):
-    """
-    Convert the RLE encoded data into a byte stream.
-    rle_data: List of integers (or tuples), representing RLE data.
-    """
-    byte_stream = bytearray()
-
-    for item in rle_data:
-        if isinstance(item, int) or isinstance(item, np.int64):
-            # Convert the integer to 2 bytes (signed)
-            byte_stream += struct.pack(">h", item)
-        elif isinstance(item, list) and len(item) % 2 == 0:
-            # Assuming the RLE data is in (run-length, value) pairs
-            for i in zip(item[::2], item[1::2]):
-                run_length, value = i
-                try:
-                    byte_stream += struct.pack(">bb", run_length, value)
-                except Exception as e:
-                    print(run_length, value)
-                    raise Exception
-        else:
-            raise ValueError("Unexpected RLE format:", type(item))
-    
-    return bytes(byte_stream)
-
-def bytes_to_rle_data(byte_stream):
-    """
-    Convert a byte stream back into RLE encoded data.
-    byte_stream: A bytearray or bytes object representing the compressed RLE data.
-    Returns a list of RLE data (integers or (run-length, value) pairs).
-    """
-    rle_data = []
-    i = 0
-    while i < len(byte_stream):
-        if i + 1 < len(byte_stream):
-            # Unpack as (run-length, value) pair (2 bytes: 1 byte for run-length and 1 byte for value)
-            run_length, value = struct.unpack(">ib", byte_stream[i:i+5])
-            rle_data.extend((run_length, value))
-            i += 2
-        else:
-            # If a single value (without a pair), decode as a signed short (2 bytes)
-            value = struct.unpack(">h", byte_stream[i:i+2])[0]
-            rle_data.append(value)
-            i += 2
-
-    return rle_data
-
-
-
-import struct
-
 def bits_to_bytes(bit_string):
-    # Convert a string of bits to bytes
-    return bytes(int(bit_string[i:i + 8], 2) for i in range(0, len(bit_string), 8))
+    """Convert a string of 0s and 1s to a bytes object."""
+    # Preserve the exact bit length as meta-information to avoid padding mismatches
+    bit_length = len(bit_string)
+    byte_length = (bit_length + 7) // 8
+    byte_value = int(bit_string, 2).to_bytes(byte_length, byteorder='big')
+    return byte_value, bit_length
 
-def bytes_to_bits(byte_string):
-    # Convert bytes to a string of bits
-    return ''.join(format(byte, '08b') for byte in byte_string)
+def bytes_to_bits(byte_string, bit_length):
+    """Convert a bytes object back to a string of 0s and 1s."""
+    # Preserve the exact original length of the bit string
+    bit_string = ''.join(f"{byte:08b}" for byte in byte_string)
+    return bit_string[-bit_length:]  # Only keep the relevant bits
 
-def save_to_file(data, filename):
+# def save_to_file(data, filename):
+#     with open(filename, 'wb+') as file:
+#         file.write(struct.pack('>I', len(data)))  # Number of entries
+#         for bit_string, dictionary in data:
+#             byte_string, bit_length = bits_to_bytes(bit_string)
+#             dict_str = ','.join(f"{key}:{value}" for key, value in dictionary.items())
+#             dict_bytes = dict_str.encode('utf-8')
+            
+#             file.write(struct.pack('>I', len(byte_string)))  # Length of byte string
+#             file.write(struct.pack('>I', bit_length))       # Length of original bit string
+#             file.write(struct.pack('>I', len(dict_bytes)))  # Length of dictionary bytes
+#             file.write(byte_string)
+#             file.write(dict_bytes)
+
+# def load_from_file(filename):
+#     data = []
+#     with open(filename, 'rb') as file:
+#         for i in range(3):
+#             file.readline()
+#         entry_count = struct.unpack('>I', file.read(4))[0]  # Number of entries
+        
+#         for _ in range(entry_count):
+#             byte_string_len = struct.unpack('>I', file.read(4))[0]  # Length of byte string
+#             bit_length = struct.unpack('>I', file.read(4))[0]       # Length of original bit string
+#             dict_bytes_len = struct.unpack('>I', file.read(4))[0]   # Length of dictionary bytes
+            
+#             byte_string = file.read(byte_string_len)  # Read byte string
+#             dict_bytes = file.read(dict_bytes_len)    # Read dictionary bytes
+            
+#             bit_string = bytes_to_bits(byte_string, bit_length)  # Reconstruct bit string
+#             dictionary = {int(item.split(':')[0]): item.split(':')[1] for item in dict_bytes.decode('utf-8').split(',')}
+            
+#             data.append((bit_string, dictionary))
+    
+#     return data
+
+def save_to_file(data, filename, extra_tuple=None):
     with open(filename, 'wb') as file:
-        # First write the number of entries as a big-endian integer
-        file.write(struct.pack('>I', len(data)))  # >I for big-endian unsigned int
+        file.write(struct.pack('>I', len(data)))  # Number of entries
         for bit_string, dictionary in data:
-            byte_string = bits_to_bytes(bit_string)
+            byte_string, bit_length = bits_to_bytes(bit_string)
             dict_str = ','.join(f"{key}:{value}" for key, value in dictionary.items())
             dict_bytes = dict_str.encode('utf-8')
             
-            # Write the length of byte_string and dict_bytes
-            file.write(struct.pack('>I', len(byte_string)))  # Length of the bit string
-            file.write(struct.pack('>I', len(dict_bytes)))   # Length of the dictionary
-            
-            # Write the actual bytes
+            file.write(struct.pack('>I', len(byte_string)))  # Length of byte string
+            file.write(struct.pack('>I', bit_length))       # Length of original bit string
+            file.write(struct.pack('>I', len(dict_bytes)))  # Length of dictionary bytes
             file.write(byte_string)
             file.write(dict_bytes)
+        
+        if extra_tuple:
+            file.write(struct.pack('>5I', *extra_tuple))  # Save the extra tuple as three unsigned integers
 
 def load_from_file(filename):
     data = []
+    extra_tuple = None
     with open(filename, 'rb') as file:
-        # Read the number of entries
-        entry_count = struct.unpack('>I', file.read(4))[0]
+        entry_count = struct.unpack('>I', file.read(4))  # Number of entries
         
-        for _ in range(entry_count):
-            # Read the length of byte_string and dict_bytes
-            byte_string_len = struct.unpack('>I', file.read(4))[0]
-            dict_bytes_len = struct.unpack('>I', file.read(4))[0]
+        for _ in range(entry_count[0]):
+            byte_string_len = struct.unpack('>I', file.read(4))[0]  # Length of byte string
+            bit_length = struct.unpack('>I', file.read(4))[0]       # Length of original bit string
+            dict_bytes_len = struct.unpack('>I', file.read(4))[0]   # Length of dictionary bytes
             
-            # Read the actual bytes
-            byte_string = file.read(byte_string_len)
-            dict_bytes = file.read(dict_bytes_len)
+            byte_string = file.read(byte_string_len)  # Read byte string
+            dict_bytes = file.read(dict_bytes_len)    # Read dictionary bytes
             
-            # Convert bytes back to bit strings
-            bit_string = bytes_to_bits(byte_string)
-            # Convert the dictionary bytes back to a dictionary
-            dictionary = {item.split(':')[0]: item.split(':')[1] for item in dict_bytes.decode('utf-8').split(',')}
+            bit_string = bytes_to_bits(byte_string, bit_length)  # Reconstruct bit string
+            dictionary = {int(item.split(':')[0]): item.split(':')[1] for item in dict_bytes.decode('utf-8').split(',')}
             
-            # Append the tuple to the data list
             data.append((bit_string, dictionary))
+        
+        remaining_data = file.read()  # Read any remaining data
+        if remaining_data:
+            extra_tuple = struct.unpack('>5I', remaining_data[:20])  # Read the 3-integer tuple
     
-    return data
+    return data, extra_tuple
+
+
+if __name__ == "__main__":
+    to_save = [('0101101000101010010100001111100', {1: '0', 2: '10', np.int64(-3): '11', 4: '110'})]*3
+    save_to_file(to_save, 'cache.myjpeg', (426, 640, 3, 50, 0))
+    loaded = load_from_file('cache.myjpeg')
+    print(to_save)
+    print(loaded)
+
+    print(to_save == loaded)

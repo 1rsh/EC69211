@@ -14,23 +14,11 @@ class ColorConverter:
                                     [1.0, 1.772, 0.0]])
         
     def rgb2ycbcr(self, image: np.ndarray) -> np.ndarray:
-        """
-        Converts an RGB image to YCbCr color space.
-        
-        :param image: A NumPy array of shape (height, width, 3) representing the RGB image.
-        :return: A NumPy array of shape (height, width, 3) representing the YCbCr image.
-        """
         ycbcr_image = image @ self.transform_matrix.T + np.array([0, 128, 128])
         
         return ycbcr_image.astype(np.uint8)
 
     def ycbcr2rgb(self, image: np.ndarray) -> np.ndarray:
-        """
-        Converts a YCbCr image back to RGB color space.
-        
-        :param image: A NumPy array of shape (height, width, 3) representing the YCbCr image.
-        :return: A NumPy array of shape (height, width, 3) representing the RGB image.
-        """
         temp = image - np.array([0, 128, 128])
         flat = temp.reshape(-1, 3)
 

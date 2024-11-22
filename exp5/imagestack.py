@@ -158,7 +158,10 @@ class ImageStack:
 
         k = 0
 
-        while (Ik - prev_Ik).max() > epsilon * 255:
+        criterion = abs(Ik - prev_Ik).mean() / 255
+
+        while criterion > epsilon:
+            print(f"Iteration: {k+1}, L1 Loss: {criterion:.4f}", end="\r")
             Ak = self.convolve(Ik, G_sigma)
             
             with np.errstate(divide='ignore', invalid='ignore'):
@@ -168,6 +171,7 @@ class ImageStack:
             
             prev_Ik = Ik
             Ik = Ik * Ck
+            criterion = abs(Ik - prev_Ik).mean() / 255
             k+=1
 
         return Ik, k
